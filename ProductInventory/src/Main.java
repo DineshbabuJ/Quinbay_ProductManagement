@@ -2,14 +2,21 @@
 // click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
 import java.util.*;
 import java.io.*;
+import java.util.concurrent.CompletableFuture;
 
 public class Main {
     public static HashMap<Integer,Product> list=new HashMap<>();
-
     static{
-        loadProductsFromFile();
+//        loadProductsFromFile();
+//        Customer.loadProductsFromFile();
+        System.out.println("Starting to load products asynchronously...");
+        CompletableFuture<Void> loadTask = CompletableFuture.runAsync(() -> {
+            loadProductsFromFile();
+        });
 
-        Customer.loadProductsFromFile();
+        CompletableFuture<Void> loadCustomerTask = CompletableFuture.runAsync(() -> {
+            Customer.loadProductsFromFile();
+        });
     }
 
     private static final String FILE_NAME = "inventory.txt";
@@ -32,7 +39,8 @@ public class Main {
                 int choice=sc.nextInt();
                 switch(choice){
                     case 1:
-                        seller1.addProduct();
+//                        seller1.addProduct();
+                        CompletableFuture.runAsync(()->seller1.addProduct()).join();
                         break;
                     case 2:
                         System.out.println("enter the product id");
@@ -77,10 +85,6 @@ public class Main {
                         return;
                     default:
                         System.out.println("Invalid choice");
-
-
-
-
                 }
             } else if (option == 2) {
                 System.out.println("List of Choices for you:\n 1.View single product \n 2.List All products in inventory\n 3. Purchase Product \n 4.History of purchase \n 5.Exit");
@@ -105,7 +109,6 @@ public class Main {
                             System.out.println("Enter the no of products to purchase ");
                             int count = sc.nextInt();
                             customer1.purchase(id4, count);
-
                         }
                         break;
                     case 4:
@@ -123,7 +126,6 @@ public class Main {
             String shouldContinue=sc.next();
             if(!shouldContinue.equals("Y") && !shouldContinue.equals("y")) flagtoContinue=false;
         }
-
     }
      static void loadProductsFromFile() {
         try(BufferedReader reader = new BufferedReader(new FileReader(FILE_NAME))) {
@@ -150,5 +152,4 @@ public class Main {
             e.printStackTrace();
         }
     }
-
 }
