@@ -1,0 +1,4 @@
+1,apple,100000.0,11,true
+2,macbook,200000.0,48,true
+3,pen,1654.0,100,true
+4,book,123.0,234,true

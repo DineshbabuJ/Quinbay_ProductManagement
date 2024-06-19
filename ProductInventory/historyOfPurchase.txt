@@ -1,0 +1,2 @@
+1,apple,100000.0,1,true
+2,macbook,200000.0,2,true
