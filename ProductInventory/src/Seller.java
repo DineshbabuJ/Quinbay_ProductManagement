@@ -1,4 +1,6 @@
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+
 public class Seller {
 
     Scanner sc = new Scanner(System.in);
@@ -8,12 +10,6 @@ public class Seller {
         String name=sc.next();
         System.out.println("Enter product price:");
         float prize=sc.nextFloat();
-//        System.out.println("Enter product id:");
-//        int id=sc.nextInt();
-//        if(Main.list.containsKey(id)){
-//            System.out.println("This id already exists");
-//            return;
-//        }
         if(prize<=0){
             System.out.println("Invalid prize");
             return;
@@ -26,7 +22,8 @@ public class Seller {
         }
         Product p1=new Product(name,prize,stock);
         Main.list.put(p1.productId,p1);
-        Main.saveProductsToFile();
+
+        CompletableFuture<Void> loadTask = CompletableFuture.runAsync(Main::saveProductsToFile);
         System.out.println("Added successfully");
     }
     void displayProduct(Product item){
@@ -47,14 +44,10 @@ public class Seller {
         }
     }
 
-
-
-
-
     void deleteProduct(int id){
         if(Main.list.containsKey(id)){
             Main.list.get(id).existflag=false;
-            Main.saveProductsToFile();
+            CompletableFuture<Void> save = CompletableFuture.runAsync(Main::saveProductsToFile);
             System.out.println("Removed successfully");
         }
         else{
