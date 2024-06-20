@@ -1,5 +1,5 @@
 public class PurchasedItem {
-    int productId;
+    String productId;
     String productName;
     float productPrize;
     int quantity;

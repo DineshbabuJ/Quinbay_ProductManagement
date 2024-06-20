@@ -1,21 +1,23 @@
 import java.io.Serializable;
-
+import org.bson.Document;
 public class Product  {
 
-    int productId;
+    String productId;
     String productName;
-    float productPrize;
+    double productPrize;
     int stock;
     boolean existflag=true;
+    String categoryId;
 
-    Product(String name,float prize,int stock){
+    Product(String name,double prize,int stock,String categoryId){
         System.out.println(Main.list.size());
-        this.productId=Main.list.size()+1;
+        this.productId="Prod"+(Main.list.size()+1);
         this.productName=name;
         this.productPrize=prize;
         this.stock=stock;
+        this.categoryId=categoryId;
     }
-    Product(int id,String name,float prize,int stock,boolean flag){
+    Product(String id,String name,double prize,int stock,boolean flag){
 
         this.productId=id;
         this.productName=name;
@@ -25,7 +27,7 @@ public class Product  {
 
 
     }
-    Product(int id,String name,float prize,int stock){
+    Product(String id,String name,double prize,int stock){
 
         this.productId=id;
         this.productName=name;
@@ -35,7 +37,7 @@ public class Product  {
 
     }
 
-    public int getId() {
+    public String getId() {
         return this.productId;
     }
 
@@ -66,5 +68,12 @@ public class Product  {
     @Override
     public String toString() {
         return this.productId + "," + this.productName+ "," + this.productPrize + "," + this.stock+","+this.existflag;
+    }
+    public static Product fromDocument(Document doc) {
+        String id = doc.getString("productId");
+        String name = doc.getString("productName");
+        Double price = doc.containsKey("productPrice") ? doc.getDouble("productPrice") : 0.0;
+        Integer quantity = doc.containsKey("productStock") ? doc.getInteger("productStock") : 0;
+        return new Product(id, name, price, quantity);
     }
 }

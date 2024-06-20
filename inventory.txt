@@ -1,9 +1,2 @@
-1,apple,322.0,100,false
-2,macbook,100.0,25,true
-3,pen,1654.0,100,false
-4,book,123.0,234,true
-5,asdf,123.0,100000,true
-6,pencil,12.0,122,true
-7,sam,727.0,272,true
-8,hjgdshgd,222.0,92,true
-9,tab,12.0,1233456,true
+Prod1,milk,40.0,50,true
+Prod2,tv,50000.0,200,true
