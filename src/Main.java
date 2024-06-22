@@ -1,13 +1,13 @@
 //TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
 // click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
-import java.sql.SQLException;
+
 import java.util.*;
 import java.io.*;
 import java.util.concurrent.CompletableFuture;
-
 import com.mongodb.client.*;
 import org.bson.Document;
-import java.sql.Connection;
+//import java.sql.SQLException;
+//import java.sql.Connection;
 
 public class Main {
     public static HashMap<String,Product> list=new HashMap<>();
@@ -23,14 +23,14 @@ public class Main {
 
 //        System.out.println(Thread.currentThread().getName());
         System.out.println("Starting to load products asynchronously...");
-        CompletableFuture<Void> loadTask = CompletableFuture.runAsync(() -> {
+        CompletableFuture.runAsync(() -> {
             System.out.println(Thread.currentThread().getName());
             try {
                 readProductsFromDatabase();
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
-            loadProductsFromFile();
+//            loadProductsFromFile();
         });
 
 //        CompletableFuture<Void> loadCustomerTask = CompletableFuture.runAsync(() -> {
@@ -44,8 +44,8 @@ public class Main {
         Customer customer1= new Customer();
         System.out.println("-----------------------------------------");
         System.out.println("WELCOME TO PRODUCT STORE");
-        boolean flagtoContinue=true;
-        while(flagtoContinue){
+        boolean flagToContinue=true;
+        while(flagToContinue){
             System.out.println("-----------------------------------------");
             System.out.println("CHOOSE WHO ARE YOU \n 1.Seller \n 2.Buyer");
             int option = sc.nextInt();
@@ -55,8 +55,7 @@ public class Main {
                 int choice=sc.nextInt();
                 switch(choice){
                     case 1:
-//                        seller1.addProduct();
-                        CompletableFuture.runAsync(()->seller1.addProduct()).join();
+                        CompletableFuture.runAsync(seller1::addProduct).join();
                         break;
                     case 2:
                         System.out.println("enter the product id");
@@ -138,26 +137,25 @@ public class Main {
             }
             System.out.println("do you want to continue:(Y/N)");
             String shouldContinue=sc.next();
-            if(!shouldContinue.equals("Y") && !shouldContinue.equals("y")) flagtoContinue=false;
+            if(!shouldContinue.equals("Y") && !shouldContinue.equals("y")) flagToContinue=false;
         }
 
     }
-     static void loadProductsFromFile() {
-         System.out.println(Thread.currentThread().getName());
+//     static void loadProductsFromFile() {
+//         System.out.println(Thread.currentThread().getName());
 //        try(BufferedReader reader = new BufferedReader(new FileReader(FILE_NAME))) {
 //            String line;
 //            while ((line = reader.readLine()) != null) {
 //                String[] parts = line.split(",");
 //                if (parts.length == 5) {
-//                    Product product = new Product(parts[0], parts[1], Double.parseDouble(parts[2]), Integer.parseInt(parts[3]),Boolean.parseBoolean(parts[4]));
-////                    if(Boolean.parseBoolean(parts[4]))
-//                        list.put(product.getId(), product);
+//                    Product prod = new Product(parts[0], parts[1], Double.parseDouble(parts[2]), Integer.parseInt(parts[3]),Boolean.parseBoolean(parts[4]));
+//                        list.put(prod.getId(), product);
 //                }
 //            }
 //        } catch (IOException e) {
 //            e.printStackTrace();
 //        }
-    }
+//    }
     static void saveProductsToFile() {
         System.out.println(Thread.currentThread().getName());
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(FILE_NAME))) {
@@ -175,13 +173,14 @@ public class Main {
     public static void readProductsFromDatabase() {
         FindIterable<Document> documents = collection.find();
         for (Document doc : documents) {
-            Product product = null;
+
             try {
-                product = Product.fromDocument(doc);
+                Product product = Product.fromDocument(doc);
+                list.put(product.getId(), product);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
-            list.put(product.getId(), product);
+
         }
     }
 

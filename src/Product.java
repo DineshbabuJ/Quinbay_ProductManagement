@@ -1,4 +1,4 @@
-import java.io.Serializable;
+//import java.io.Serializable;
 import org.bson.Document;
 public class Product  {
 
@@ -24,8 +24,6 @@ public class Product  {
         this.productPrize=prize;
         this.stock=stock;
         this.existflag=flag;
-
-
     }
     Product(String id,String name,double prize,int stock){
 
@@ -33,8 +31,14 @@ public class Product  {
         this.productName=name;
         this.productPrize=prize;
         this.stock=stock;
+    }
+    Product(String id,String name,double prize,int stock,String cat){
 
-
+        this.productId=id;
+        this.productName=name;
+        this.productPrize=prize;
+        this.stock=stock;
+        this.categoryId=cat;
     }
 
     public String getId() {
@@ -72,8 +76,9 @@ public class Product  {
     public static Product fromDocument(Document doc) {
         String id = doc.getString("productId");
         String name = doc.getString("productName");
-        Double price = doc.containsKey("productPrice") ? doc.getDouble("productPrice") : 0.0;
-        Integer quantity = doc.containsKey("productStock") ? doc.getInteger("productStock") : 0;
-        return new Product(id, name, price, quantity);
+        double price = doc.containsKey("productPrice") ? doc.getDouble("productPrice") : 0.0;
+        int quantity = doc.containsKey("productStock") ? doc.getInteger("productStock") : 0;
+        String Category=doc.getString("categoryId");
+        return new Product(id, name, price, quantity,Category);
     }
 }

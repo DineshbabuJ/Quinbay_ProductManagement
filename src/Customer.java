@@ -1,16 +1,16 @@
 import com.mongodb.client.MongoCollection;
 import org.bson.Document;
-
-import java.io.*;
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Scanner;
-import java.util.concurrent.CompletableFuture;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+//import java.io.*;
+//import java.util.ArrayList;
+//import java.util.concurrent.CompletableFuture;
 
 public class Customer {
     private Connection conn;
@@ -32,8 +32,8 @@ public class Customer {
         }
     }
 
-    static ArrayList<Product> purchaseHistory = new ArrayList<>();
-    static ArrayList<Product> orderItems = new ArrayList<>();
+//    static ArrayList<Product> purchaseHistory = new ArrayList<>();
+    static HashMap<String,Product> orderItems = new HashMap<>();
 
     static String insertOrderItems = "INSERT INTO \"OrderItems\" (\"OrderId\", \"ProductId\", \"ProductName\", \"ProductQuantity\", \"ProductPrice\") VALUES (?, ?, ?, ?, ?)";
     static String insertOrders = "INSERT INTO \"Orders\" (\"OrderId\", \"NoOfProducts\", \"totalPrice\") VALUES (?, ?, ?)";
@@ -52,11 +52,12 @@ public class Customer {
     }
 
     void purchase() {
+        orderItems.clear();
         boolean isContinue = true;
         Scanner sc = new Scanner(System.in);
         int orderCount = getOrderCount();
         String orderId = "Ord" + (orderCount+1);
-        do {
+        while(isContinue) {
             System.out.println("Enter the product id to purchase ");
             String id = sc.next();
             if (!Main.list.containsKey(id) || !Main.list.get(id).existflag) {
@@ -71,28 +72,33 @@ public class Customer {
                 } else if (Main.list.get(id).stock < stock) {
                     System.out.println("There are only " + Main.list.get(id).stock + " available");
                 } else {
-                    Main.list.get(id).stock -= stock;
-                    if (Main.list.get(id).stock == 0) Main.list.get(id).existflag = false;
-                    Main.saveProductsToFile();
-
-
+//                    Main.list.get(id).stock -= stock;
+//                    if (Main.list.get(id).stock == 0) Main.list.get(id).existflag = false;
+//                    Main.saveProductsToFile();
                     Product item = Main.list.get(id);
                     Product p1 = new Product(item.productId, item.productName, item.productPrize, stock);
-                    orderItems.add(p1);
+                    if(orderItems.containsKey(p1.productId)){
+                        p1.stock+=orderItems.get(p1.productId).stock;
+                    }
+                    if(p1.stock<=Main.list.get(id).stock)
+                        orderItems.put(p1.productId,p1);
+                    else System.out.println("There are only "+Main.list.get(id).stock+" products available But you try to order more tha that");
 //                    CompletableFuture<Void> loadTask = CompletableFuture.runAsync(this::saveProductsToFile);
                 }
-                System.out.println("Do you need want to purchase more items (y/n)");
-                if (!sc.next().equalsIgnoreCase("y")) isContinue = false;
+
             }
-        } while (isContinue);
+            System.out.println("Do you need want to purchase more items (y/n)");
+            if (!sc.next().equalsIgnoreCase("y")) isContinue = false;
+        }
 
         System.out.println("Confirm to purchase (y/n)");
         if (sc.next().equalsIgnoreCase("y")) {
+            boolean itemExceededStock=false;
             try {
                 PreparedStatement pstmt = conn.prepareStatement(insertOrderItems);
                 int noOfProducts=0;
                 int totalPrice=0;
-                for (Product prod : orderItems) {
+                for (Product prod : orderItems.values()) {
                     noOfProducts+=prod.stock;
                     totalPrice+= (int) (prod.stock*prod.productPrize);
                     pstmt.setString(1, orderId);
@@ -101,24 +107,37 @@ public class Customer {
                     pstmt.setInt(4, prod.stock);
                     pstmt.setDouble(5, prod.productPrize);
                     pstmt.addBatch();
-                    MongoCollection<Document> collection = Main.getCollection();
-                    Document stockfilter = new Document("productId", prod.productId);
-                    Document stockupdate = new Document("$set", new Document("productStock",Main.list.get(prod.productId).stock-prod.stock ));
-                    collection.updateOne(stockfilter, stockupdate);
-                }
-                pstmt.executeBatch();
 
-                // Clear the order items after saving
-                PreparedStatement pstmt2 = conn.prepareStatement(insertOrders);
-                pstmt2.setString(1,orderId);
-                pstmt2.setInt(2,noOfProducts);
-                pstmt2.setDouble(3,totalPrice);
-                pstmt2.addBatch();
-                pstmt2.executeBatch();
-                System.out.println("Order saved successfully!");
+                    if (Main.list.get(prod.productId).stock-prod.stock>=0) {
+                        MongoCollection<Document> collection = Main.getCollection();
+                        Document stockfilter = new Document("productId", prod.productId);
+                        Document stockupdate = new Document("$set", new Document("productStock",Main.list.get(prod.productId).stock-prod.stock ));
+                        collection.updateOne(stockfilter, stockupdate);
+                    }
+                    else{
+                        System.out.println("only "+Main.list.get(prod.productId).stock+" are available in "+prod.productId+" but you ordered "+prod.stock);
+                        itemExceededStock=true;
+                    }
+
+
+                }
+                if(!itemExceededStock) {
+
+                    // Clear the order items after saving
+                    PreparedStatement pstmt2 = conn.prepareStatement(insertOrders);
+                    pstmt2.setString(1, orderId);
+                    pstmt2.setInt(2, noOfProducts);
+                    pstmt2.setDouble(3, totalPrice);
+                    pstmt2.addBatch();
+                    pstmt2.executeBatch();
+                    System.out.println("Order saved successfully!");
+                    pstmt.executeBatch();
+                    Main.readProductsFromDatabase();
 //                for(Product prod:orderItems){
 //                      purchaseHistory.add(prod);
 //                }
+                }
+                else System.out.println("order cancelled");
 
 
             } catch (SQLException e) {
@@ -134,21 +153,40 @@ public class Customer {
 //        for (Product item : purchaseHistory) {
 //            displayProduct(item);
 //        }
-        String sql = "SELECT * FROM \"Orders\""; // Query to fetch the order history
+        String sql = "SELECT o.\"OrderId\", o.\"NoOfProducts\", o.\"totalPrice\", " +
+                "oi.\"ProductId\", oi.\"ProductName\", oi.\"ProductQuantity\", oi.\"ProductPrice\" " +
+                "FROM \"Orders\" o " +
+                "JOIN \"OrderItems\" oi ON o.\"OrderId\" = oi.\"OrderId\" " +
+                "ORDER BY o.\"OrderId\"";
+
         try (Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
             if (!rs.isBeforeFirst()) {
                 System.out.println("No purchase history found.");
             } else {
+                String currentOrderId = "";
                 while (rs.next()) {
                     String orderId = rs.getString("OrderId");
-
-                    int noOfProducts = rs.getInt("NoOfProducts");
-
-                    double totalPrice = rs.getDouble("totalPrice");
-                    System.out.println("Order ID: " + orderId +
-                            ", No of Products: " + noOfProducts +
-                            ", Total Price: " + totalPrice );
+                    if (!orderId.equals(currentOrderId)) {
+                        if (!currentOrderId.isEmpty()) {
+                            System.out.println();  // Print a blank line between orders
+                        }
+                        currentOrderId = orderId;
+                        int noOfProducts = rs.getInt("NoOfProducts");
+                        double totalPrice = rs.getDouble("totalPrice");
+                        System.out.println("Order ID: " + orderId +
+                                ", No of Products: " + noOfProducts +
+                                ", Total Price: " + totalPrice);
+                    }
+                    // Fetch and display the product details for the current order
+                    String productId = rs.getString("ProductId");
+                    String productName = rs.getString("ProductName");
+                    int productQuantity = rs.getInt("ProductQuantity");
+                    double productPrice = rs.getDouble("ProductPrice");
+                    System.out.println("    Product ID: " + productId +
+                            ", Product Name: " + productName +
+                            ", Quantity: " + productQuantity +
+                            ", Price: " + productPrice);
                 }
             }
         } catch (SQLException e) {
@@ -179,21 +217,21 @@ public class Customer {
         }
     }
 
-    static void loadProductsFromFile() {
-        try (BufferedReader reader = new BufferedReader(new FileReader("historyOfPurchase.txt"))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                String[] parts = line.split(",");
-                if (parts.length == 5) {
-                    Product product = new Product(parts[0], parts[1], Float.parseFloat(parts[2]), Integer.parseInt(parts[3]), Boolean.parseBoolean(parts[4]));
-                    if (Boolean.parseBoolean(parts[4]))
-                        purchaseHistory.add(product);
-                }
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
+//    static void loadProductsFromFile() {
+//        try (BufferedReader reader = new BufferedReader(new FileReader("historyOfPurchase.txt"))) {
+//            String line;
+//            while ((line = reader.readLine()) != null) {
+//                String[] parts = line.split(",");
+//                if (parts.length == 5) {
+//                    Product product = new Product(parts[0], parts[1], Float.parseFloat(parts[2]), Integer.parseInt(parts[3]), Boolean.parseBoolean(parts[4]));
+//                    if (Boolean.parseBoolean(parts[4]))
+//                        purchaseHistory.add(product);
+//                }
+//            }
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//    }
 
 //    void saveProductsToFile() {
 //        try (BufferedWriter writer = new BufferedWriter(new FileWriter("historyOfPurchase.txt"))) {

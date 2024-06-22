@@ -4,15 +4,15 @@ import java.util.concurrent.CompletableFuture;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Filters;
 import org.bson.Document;
-import java.sql.SQLException;
-import java.util.*;
-import java.io.*;
-import java.util.concurrent.CompletableFuture;
+//import java.sql.SQLException;
+//import java.util.*;
+//import java.io.*;
+//import java.util.concurrent.CompletableFuture;
 
 import com.mongodb.client.*;
-import org.bson.Document;
-import java.sql.Connection;
-import java.util.concurrent.atomic.AtomicInteger;
+//import org.bson.Document;
+//import java.sql.Connection;
+
 
 public class Seller extends Main{
 
@@ -44,7 +44,8 @@ public class Seller extends Main{
                 .append("productName", p1.productName)
                 .append("productPrice", p1.productPrize)
                 .append("productStock", p1.stock)
-                .append("exist", true);
+                .append("exist", true)
+                .append("categoryId",p1.categoryId);
         collection.insertOne(productDocument);
 
 
@@ -107,7 +108,7 @@ public class Seller extends Main{
                 categoryDocument.append("categoryId","Cat"+categoryId );
                 categories.insertOne(categoryDocument);
 
-                System.out.println("Category '" + categoryName + "' added successfully.");
+                System.out.println("Category '" + categoryName + "' added.");
             }
         } catch (Exception e) {
             System.err.println("Error adding category: " + e.getMessage());

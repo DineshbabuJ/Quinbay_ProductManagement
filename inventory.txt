@@ -1,2 +1,1 @@
-Prod1,milk,40.0,50,true
-Prod2,tv,50000.0,200,true
+
